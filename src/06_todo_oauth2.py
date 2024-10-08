@@ -6,7 +6,7 @@ import os
 import urllib.parse
 import time
 
-amsterdam = [-0.805, 50.800, -0.738, 50.897]
+amsterdam = [4.8896, 52.3576, 4.9186, 52.3776]
 
 
 output_dir = r'C:\svi\mapillary-api\data\metadata'

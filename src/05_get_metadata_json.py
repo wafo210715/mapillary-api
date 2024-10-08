@@ -4,7 +4,7 @@ import mercantile
 from vt2geojson.tools import vt_bytes_to_geojson
 import os
 
-amsterdam = [-0.805, 50.800, -0.738, 50.897]
+amsterdam = [4.8896, 52.3576, 4.9186, 52.3776]
 
 
 output_dir = r'C:\svi\mapillary-api\data\metadata'
@@ -23,7 +23,7 @@ data = {
     'grant_type': "authorization_code",
     'client_id': 26242695162043863,
     #client_id--对应我们注册application的Client ID - 这里就是授权代码
-    'code':'AQAwk80V-7Tm_qUgAZ-8PFA062ldNlC4RuyQzBRH-Rb-ewGTKQLTq7e0PYtRGISix1KINq_avGl4-lVB2jAGop4H1cs4UNFOCWFnuiLomAAtNYVQyWs0CdFOk10IdEUwHRWKHq3FEW5h_fJ2KACAYgHq44QmpEUtMj-U49j9OMuXkTXgNINMXDI_4Y4vAi5ZcLtvv50JFZylGkNQBeJO5JdhKUR870rbPIqBx5BhGdIIE_xgGW3bn-d4V-55yekmQCpazsnJjQcDR0q0UITamRAX5hKRx43DZRF8HK1HVBMztQ'
+    'code':'AQAWSUNIcs3ZiHXHA6rBphe-wWZe-r7H0SBk4nMpAt3N8HGyyLg5guDLntJqUwS1-9ZMdyRUxI5cCYyYamZJBNkg93r4w-_1PNey3uLU4GfGerBUEeTY5xDoogwbe9ywkmuZqcOBF1qmpaolB6BIxZELZNKDAERn_T7PioCyz8sGkPCn6tNn62jfNlQbNX66RQ9Ulw1QjrT2EILsGDF9MIDbLZexnQbJmXr0ZHApI5kh6zdeWfF0r5T7KZLfN2RwhWQB0iec2yR02xgQVV5x1liySYdaV07uoTeZmpxBxqUkWg'
 	#code--授权代码
 }
 
