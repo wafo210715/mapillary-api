@@ -5,9 +5,10 @@ import pickle
 import argparse
 import time
 
-amsterdam = [4.8896, 52.3576, 4.9186, 52.3776]
+# Remove the Amsterdam bounding box
+# amsterdam = [4.8896, 52.3576, 4.9186, 52.3776]
 # Directory where images will be saved
-save_dir = r"C:\svi\mapillary-api\data\1_retry"  # Replace with your desired directory path
+save_dir = r"C:\svi\data"  # Replace with your desired directory path
 
 # https://www.mapillary.com/connect?client_id=26242695162043863
 
@@ -23,7 +24,7 @@ data = {
     'grant_type': "authorization_code",
     'client_id': 26242695162043863,
     #client_id--对应我们注册application的Client ID - 这里就是授权代码
-    'code':'AQCCSZREkq8WQnHZ2mpt6a2jwou3u5ncBeivDWZ8gbrHAzf2sr8S4eV8yRsMIoZfH707xgSj8AR7SgyNYra56bvQzno5tRQ7F6Ezk40MjKpt2VPlD6SrtFpT-nKiN1MCPTCsTiyBRKJLonFoqXdC8ZlfX8BfpmbUvVK8brdMZg8M0Cob5OFrfK-jrwyDZ6pIkDZEnZAYvxlD5N1IZOXv4Uy8fHP979U0FTX4ak_AnDKg_TWJ0-SHx_IjhqQ6H_hfHzUOG3zC_ug26bURezsaAWkMKPf7rWiNujTZmXHmMKpKLw'
+    'code':'AQAQotIyWm3W2pVwmuvZZmaMMi7wR-cE2X_H1x5G-Vh9oqdAuuLn4g4Cy4OkjmsL9IkBbX8_wEEbxyeHs-uaUUcgTyqAFxz0NQVBX5gxR9n7YWC7vWtsqYDL75aW64Jl90sSChtnPTroxAtQ96OfQCb2kWcekKrqSoHn1_N-yMkZHbKN1qsPT_TWkUx3Hc6g3fGfxciJ_jFLTTv8P7LMeRih-1844znITIcdyZlsrq1pWU0a3e-ZOHJCWNHfgn1oxbBsj_Xag39ITPHbnmUSGTPpZNzLSqjRznbanGVmkQ0Mkg'
 	#code--授权代码
 }
 
@@ -62,77 +63,75 @@ else:
 with open(r'C:\svi\mapillary-api\data\metadata\1_filtered.json', 'r') as f:
     data = json.load(f)
 
-# Rectangle area coordinates
-west, south, east, north = amsterdam
+# Modify the main loop
+total_features = len(data['features'])
+print(f"Total features in JSON: {total_features}")
 
-# Add a counter for failed requests
-failed_requests = 0
-max_retries = 3
-retry_delay = 5  # seconds
-
-# Iterate over all features
-for feature in data['features']:
-    # Get the coordinates of each feature
-    lng = feature['geometry']['coordinates'][0]
-    lat = feature['geometry']['coordinates'][1]
+for index, feature in enumerate(data['features'], 1):
+    # Remove the bounding box check
+    # Get the image ID
+    image_id = feature['properties']['id']
     
-    # Check if the feature is within the rectangle area
-    if west < lng < east and south < lat < north:
-        # Get the image ID
-        image_id = feature['properties']['id']
-        
-        # Skip if already processed
-        if image_id in processed_ids:
-            continue
-        
-        # Request the original image URL
-        header = {'Authorization': 'OAuth {}'.format(access_token)}
-        url = f'https://graph.mapillary.com/{image_id}?fields=thumb_original_url'
-        
-        for attempt in range(max_retries):
-            try:
-                r = requests.get(url, headers=header)
-                r.raise_for_status()
-                image_data = r.json()
-                
-                # Get the image URL
-                image_url = image_data.get('thumb_original_url')
-                if image_url:
-                    # Save the image to the specified directory
-                    image_path = os.path.join(save_dir, f'{image_id}.jpg')
-                    with open(image_path, 'wb') as f:
-                        image_content = requests.get(image_url, stream=True).content
-                        f.write(image_content)
-                    print(f'Image {image_id}.jpg saved successfully in {save_dir}.')
-                    image_count += 1
-                    failed_requests = 0  # Reset failed requests counter on success
-                else:
-                    print(f'No image URL found for image ID {image_id}.')
-                
-                break  # Break the retry loop on success
+    # Skip if already processed
+    if image_id in processed_ids:
+        continue
+    
+    # Request the original image URL
+    header = {'Authorization': 'OAuth {}'.format(access_token)}
+    url = f'https://graph.mapillary.com/{image_id}?fields=thumb_original_url'
+    
+    max_retries = 3
+    retry_delay = 5
+    failed_requests = 0
+
+    for attempt in range(max_retries):
+        try:
+            r = requests.get(url, headers=header)
+            r.raise_for_status()
+            image_data = r.json()
             
-            except requests.exceptions.RequestException as e:
-                print(f"Error fetching image data for image ID {image_id}: {e}")
-                failed_requests += 1
-                if attempt < max_retries - 1:
-                    print(f"Retrying in {retry_delay} seconds...")
-                    time.sleep(retry_delay)
-                else:
-                    print(f"Max retries reached for image ID {image_id}. Moving to next image.")
+            # Get the image URL
+            image_url = image_data.get('thumb_original_url')
+            if image_url:
+                # Save the image to the specified directory
+                image_path = os.path.join(save_dir, f'{image_id}.jpg')
+                with open(image_path, 'wb') as f:
+                    image_content = requests.get(image_url, stream=True).content
+                    f.write(image_content)
+                print(f'Image {image_id}.jpg saved successfully in {save_dir}. Progress: {index}/{total_features}')
+                image_count += 1
+                failed_requests = 0  # Reset failed requests counter on success
+            else:
+                print(f'No image URL found for image ID {image_id}. Progress: {index}/{total_features}')
             
-            # Check for consecutive failures and exit if too many
-            if failed_requests >= 10:
-                print("Too many consecutive failed requests. Exiting.")
-                break
+            break  # Break the retry loop on success
         
-        # Update processed IDs and save checkpoint
-        processed_ids.add(image_id)
-        checkpoint = {
-            'processed_ids': processed_ids,
-            'image_count': image_count
-        }
-        with open(checkpoint_file, 'wb') as f:
-            pickle.dump(checkpoint, f)
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching image data for image ID {image_id}: {e}")
+            failed_requests += 1
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                print(f"Max retries reached for image ID {image_id}. Moving to next image.")
+        
+        # Check for consecutive failures and exit if too many
+        if failed_requests >= 10:
+            print("Too many consecutive failed requests. Exiting.")
+            break
+    
+    # Update processed IDs and save checkpoint
+    processed_ids.add(image_id)
+    checkpoint = {
+        'processed_ids': processed_ids,
+        'image_count': image_count
+    }
+    with open(checkpoint_file, 'wb') as f:
+        pickle.dump(checkpoint, f)
+
+    # Print progress every 100 images
+    if index % 100 == 0:
+        print(f"Processed {index}/{total_features} features. Images saved: {image_count}")
 
 print(f'Download completed. Total images saved: {image_count}')
 print(f'Total features processed: {len(processed_ids)}')
