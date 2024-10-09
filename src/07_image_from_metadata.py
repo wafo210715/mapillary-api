@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import pickle
 
 amsterdam = [4.8896, 52.3576, 4.9186, 52.3776]
 # Directory where images will be saved
@@ -20,7 +21,7 @@ data = {
     'grant_type': "authorization_code",
     'client_id': 26242695162043863,
     #client_id--对应我们注册application的Client ID - 这里就是授权代码
-    'code':'AQCLW2SWG36E3qOkh-YWzxoFXG2femGbmCGyjgLbfrJ9rffboosuVd2skAWVGHZH3zvCB7GSup69sI_PGOkow8CjuQFlF1KJOX1kr40IFh_s9YBtML0GruE8GJ8T5f3itTu0gzSSdFQeZaL0AUpZGKtnIKijCg76W10g3IWVjdT7z85ldtmAYtKTDOn8PNcUfm9OzjtUQyhkAgFSfWFlXby0fNdufceJZFn2vnoIUED3_eVRJpfK9ZWsJ4GML98ig1yj94bPL_Xu9eI2mVW1FcqKbbNsyg0YVeT8mh4gRfNJPw'
+    'code':'AQDI6YrtiOW5N5bLy_-deJcjpNtSXjXWKlPhsU_Eg7oPhNAYTrqNS3ROx4W-A7mKU3NLX-15ezwx931115vgACuE6DNFzkYGYm6hgxsL8NHYHfcxX-6RgTba3SOH54_dA9-reM-kg_stiC1N2w1JqqqoEvWF1N-IVqwoXnTFk5Y2kPVaNpQIN6oMzEFy-hUV1JMMKgvxDdOuU70QjRGDQP7Nj_M-Pq0bu6GzloN4FJr5rukhrjlS5AI47BZ_Isble_0zd6lmIyXxKYY71WzkUSeZtcZDF5oQrZ9_8odb2rb3Ow'
 	#code--授权代码
 }
 
@@ -35,15 +36,29 @@ access_token = response_data['access_token']
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
+# Checkpoint file path
+checkpoint_file = os.path.join(save_dir, 'checkpoint.pkl')
+
+# Load checkpoint if it exists
+if os.path.exists(checkpoint_file):
+    with open(checkpoint_file, 'rb') as f:
+        checkpoint = pickle.load(f)
+    processed_ids = checkpoint['processed_ids']
+    image_count = checkpoint['image_count']
+    print(f"Resuming from checkpoint. {image_count} images already processed.")
+else:
+    processed_ids = set()
+    image_count = 0
+
 # Read the JSON file
-with open(r'C:\svi\mapillary-api\data\metadata\1.json', 'r') as f:
+with open(r'C:\svi\mapillary-api\data\metadata\1_filtered.json', 'r') as f:
     data = json.load(f)
 
 # Rectangle area coordinates
+# this is the bounding box of amsterdam
+# visualize it using 12_visualize_boundingbox.py
 west, south, east, north = amsterdam
 
-
-image_count = 0
 
 # Iterate over all features
 for feature in data['features']:
@@ -55,6 +70,10 @@ for feature in data['features']:
     if west < lng < east and south < lat < north:
         # Get the image ID
         image_id = feature['properties']['id']
+        
+        # Skip if already processed
+        if image_id in processed_ids:
+            continue
         
         # Request the original image URL
         header = {'Authorization': 'OAuth {}'.format(access_token)}
@@ -80,5 +99,14 @@ for feature in data['features']:
         
         except requests.exceptions.RequestException as e:
             print(f"Error fetching image data for image ID {image_id}: {e}")
+
+        # Update processed IDs and save checkpoint
+        processed_ids.add(image_id)
+        checkpoint = {
+            'processed_ids': processed_ids,
+            'image_count': image_count
+        }
+        with open(checkpoint_file, 'wb') as f:
+            pickle.dump(checkpoint, f)
 
 print(f'Download completed. Total images saved: {image_count}')
